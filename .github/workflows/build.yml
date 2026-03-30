@@ -1,0 +1,57 @@
+name: Build MicroPython with TWAI CAN
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+
+      - name: Clone and install ESP-IDF v5.4.1
+        run: |
+          mkdir -p ~/esp && cd ~/esp
+          git clone -b v5.4.1 --recursive --depth 1 --shallow-submodules https://github.com/espressif/esp-idf.git
+          cd esp-idf
+          ./install.sh esp32s3
+
+      - name: Clone MicroPython
+        run: |
+          cd ~/esp
+          git clone --recursive --depth 1 https://github.com/micropython/micropython.git
+
+      - name: Clone TWAI CAN module
+        run: |
+          mkdir -p ~/esp/cmodules
+          cd ~/esp/cmodules
+          git clone https://github.com/straga/micropython-esp32-twai.git
+
+      - name: Build mpy-cross
+        run: |
+          cd ~/esp/micropython
+          make -C mpy-cross
+
+      - name: Build MicroPython with TWAI for ESP32-S3 (4MB Flash, Octal PSRAM)
+        run: |
+          . ~/esp/esp-idf/export.sh
+          cd ~/esp/micropython/ports/esp32
+          rm -f *.lock
+          make submodules
+          idf.py \
+            -D MICROPY_BOARD=ESP32_GENERIC_S3 \
+            -D MICROPY_BOARD_VARIANT=SPIRAM_OCT \
+            -D USER_C_MODULES="../../../../cmodules/micropython-esp32-twai/src_can_v2/micropython.cmake" \
+            -B build_s3_can \
+            build
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: micropython-esp32s3-twai-can
+          path: |
+            ~/esp/micropython/ports/esp32/build_s3_can/micropython.bin
+            ~/esp/micropython/ports/esp32/build_s3_can/bootloader/bootloader.bin
+            ~/esp/micropython/ports/esp32/build_s3_can/partition_table/partition-table.bin
