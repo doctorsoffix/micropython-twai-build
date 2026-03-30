@@ -23,18 +23,31 @@ jobs:
           cd ~/esp
           git clone --recursive --depth 1 https://github.com/micropython/micropython.git
 
-      - name: Clone TWAI CAN module
+      - name: Clone and patch TWAI CAN module
         run: |
           mkdir -p ~/esp/cmodules
           cd ~/esp/cmodules
           git clone https://github.com/straga/micropython-esp32-twai.git
+          cd micropython-esp32-twai/src_can_v2
+          
+          echo "=== Patching mod_can.c for MP_ERROR_TEXT compatibility ==="
+          
+          sed -i 's|mp_raise_ValueError("\([^"]*\)")|mp_raise_ValueError(MP_ERROR_TEXT("\1"))|g' mod_can.c
+          sed -i 's|mp_raise_TypeError("\([^"]*\)")|mp_raise_TypeError(MP_ERROR_TEXT("\1"))|g' mod_can.c
+          sed -i 's|mp_raise_NotImplementedError("\([^"]*\)")|mp_raise_NotImplementedError(MP_ERROR_TEXT("\1"))|g' mod_can.c
+          sed -i 's|mp_raise_msg(&\([^,]*\), "\([^"]*\)")|mp_raise_msg(\&\1, MP_ERROR_TEXT("\2"))|g' mod_can.c
+          sed -i 's|mp_raise_msg_varg(&\([^,]*\), "\([^"]*\)"|mp_raise_msg_varg(\&\1, MP_ERROR_TEXT("\2")|g' mod_can.c
+          
+          echo "=== Verify patch ==="
+          grep -c "MP_ERROR_TEXT" mod_can.c
+          grep -n "mp_raise_" mod_can.c
 
       - name: Build mpy-cross
         run: |
           cd ~/esp/micropython
           make -C mpy-cross
 
-      - name: Build MicroPython with TWAI for ESP32-S3 (4MB Flash, Octal PSRAM)
+      - name: Build MicroPython with TWAI for ESP32-S3
         run: |
           . ~/esp/esp-idf/export.sh
           cd ~/esp/micropython/ports/esp32
