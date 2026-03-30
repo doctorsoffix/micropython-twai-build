@@ -18,10 +18,10 @@ jobs:
           cd esp-idf
           ./install.sh esp32s3
 
-      - name: Clone MicroPython
+      - name: Clone MicroPython v1.25.0
         run: |
           cd ~/esp
-          git clone --recursive --depth 1 https://github.com/micropython/micropython.git
+          git clone -b v1.25.0 --recursive --depth 1 https://github.com/micropython/micropython.git
 
       - name: Clone and patch TWAI CAN module
         run: |
@@ -29,18 +29,11 @@ jobs:
           cd ~/esp/cmodules
           git clone https://github.com/straga/micropython-esp32-twai.git
           cd micropython-esp32-twai/src_can_v2
-          
-          echo "=== Patching mod_can.c for MP_ERROR_TEXT compatibility ==="
-          
           sed -i 's|mp_raise_ValueError("\([^"]*\)")|mp_raise_ValueError(MP_ERROR_TEXT("\1"))|g' mod_can.c
           sed -i 's|mp_raise_TypeError("\([^"]*\)")|mp_raise_TypeError(MP_ERROR_TEXT("\1"))|g' mod_can.c
           sed -i 's|mp_raise_NotImplementedError("\([^"]*\)")|mp_raise_NotImplementedError(MP_ERROR_TEXT("\1"))|g' mod_can.c
           sed -i 's|mp_raise_msg(&\([^,]*\), "\([^"]*\)")|mp_raise_msg(\&\1, MP_ERROR_TEXT("\2"))|g' mod_can.c
           sed -i 's|mp_raise_msg_varg(&\([^,]*\), "\([^"]*\)"|mp_raise_msg_varg(\&\1, MP_ERROR_TEXT("\2")|g' mod_can.c
-          
-          echo "=== Verify patch ==="
-          grep -c "MP_ERROR_TEXT" mod_can.c
-          grep -n "mp_raise_" mod_can.c
 
       - name: Build mpy-cross
         run: |
@@ -55,7 +48,6 @@ jobs:
           make submodules
           idf.py \
             -D MICROPY_BOARD=ESP32_GENERIC_S3 \
-            -D MICROPY_BOARD_VARIANT=SPIRAM \
             -D USER_C_MODULES="../../../../cmodules/micropython-esp32-twai/src_can_v2/micropython.cmake" \
             -B build_s3_can \
             build
@@ -66,5 +58,3 @@ jobs:
           name: micropython-esp32s3-twai-can
           path: |
             ~/esp/micropython/ports/esp32/build_s3_can/micropython.bin
-            ~/esp/micropython/ports/esp32/build_s3_can/bootloader/bootloader.bin
-            ~/esp/micropython/ports/esp32/build_s3_can/partition_table/partition-table.bin
