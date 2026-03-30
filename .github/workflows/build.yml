@@ -55,7 +55,7 @@ jobs:
           make submodules
           idf.py \
             -D MICROPY_BOARD=ESP32_GENERIC_S3 \
-            -D MICROPY_BOARD_VARIANT=SPIRAM_OCT \
+            -D MICROPY_BOARD_VARIANT=SPIRAM \
             -D USER_C_MODULES="../../../../cmodules/micropython-esp32-twai/src_can_v2/micropython.cmake" \
             -B build_s3_can \
             build
