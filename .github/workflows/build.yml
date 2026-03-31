@@ -46,6 +46,8 @@ jobs:
           cd ~/esp/micropython/ports/esp32
           rm -f *.lock
           make submodules
+          echo "CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y" >> boards/ESP32_GENERIC_S3/sdkconfig.board
+          echo "CONFIG_ESP_CONSOLE_SECONDARY_NONE=y" >> boards/ESP32_GENERIC_S3/sdkconfig.board
           make \
             BOARD=ESP32_GENERIC_S3 \
             USER_C_MODULES=../../../../cmodules/micropython-esp32-twai/src_can_v2/micropython.cmake
