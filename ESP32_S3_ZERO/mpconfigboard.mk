@@ -1,7 +1,0 @@
-
-# Board name
-BOARDNAME = ESP32_S3_ZERO
-FLASH_SIZE = 4MB
-FLASH_MODE = qio
-FLASH_FREQ = 80m
-SDKCONFIG_OVERRIDES = sdkconfig.board
