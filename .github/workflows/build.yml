@@ -35,53 +35,23 @@ jobs:
           sed -i 's|mp_raise_msg(&\([^,]*\), "\([^"]*\)")|mp_raise_msg(\&\1, MP_ERROR_TEXT("\2"))|g' mod_can.c
           sed -i 's|mp_raise_msg_varg(&\([^,]*\), "\([^"]*\)"|mp_raise_msg_varg(\&\1, MP_ERROR_TEXT("\2")|g' mod_can.c
 
-      - name: Create board overlay for USB console
-        run: |
-          mkdir -p ~/esp/micropython/ports/esp32/boards/ESP32_GENERIC_S3_CAN
-          
-          cat > ~/esp/micropython/ports/esp32/boards/ESP32_GENERIC_S3_CAN/mpconfigboard.h << 'EOF'
-          // Use the base ESP32_GENERIC_S3 config
-          #include "boards/ESP32_GENERIC_S3/mpconfigboard.h"
-          EOF
-          
-          cat > ~/esp/micropython/ports/esp32/boards/ESP32_GENERIC_S3_CAN/mpconfigboard.cmake << 'EOF'
-          set(IDF_TARGET esp32s3)
-          set(SDKCONFIG_DEFAULTS
-              boards/ESP32_GENERIC_S3/sdkconfig.board
-              boards/ESP32_GENERIC_S3_CAN/sdkconfig.board
-          )
-          EOF
-          
-          cat > ~/esp/micropython/ports/esp32/boards/ESP32_GENERIC_S3_CAN/sdkconfig.board << 'EOF'
-          CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
-          CONFIG_SPIRAM=y
-          CONFIG_SPIRAM_MODE_QUAD=y
-          CONFIG_SPIRAM_SPEED_80M=y
-          CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
-          CONFIG_FREERTOS_HZ=1000
-          CONFIG_TWAI_ISR_IN_IRAM=y
-          CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
-          EOF
-
       - name: Build mpy-cross
         run: |
           cd ~/esp/micropython
           make -C mpy-cross
 
-      - name: Build MicroPython with TWAI for ESP32-S3
+      - name: Build firmware
         run: |
           . ~/esp/esp-idf/export.sh
           cd ~/esp/micropython/ports/esp32
           rm -f *.lock
           make submodules
-          idf.py \
-            -D MICROPY_BOARD=ESP32_GENERIC_S3_CAN \
-            -D USER_C_MODULES="../../../../cmodules/micropython-esp32-twai/src_can_v2/micropython.cmake" \
-            -B build_s3_can \
-            build
+          make \
+            BOARD=ESP32_GENERIC_S3 \
+            USER_C_MODULES=../../../../cmodules/micropython-esp32-twai/src_can_v2/micropython.cmake
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: micropython-esp32s3-twai-can
-          path: ~/esp/micropython/ports/esp32/build_s3_can/micropython.bin
+          path: ~/esp/micropython/ports/esp32/build-ESP32_GENERIC_S3/firmware.bin
