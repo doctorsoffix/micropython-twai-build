@@ -18,10 +18,10 @@ jobs:
           cd esp-idf
           ./install.sh esp32s3
 
-      - name: Clone MicroPython v1.25.0
+      - name: Clone MicroPython v1.26.1
         run: |
           cd ~/esp
-          git clone -b v1.25.0 --recursive --depth 1 https://github.com/micropython/micropython.git
+          git clone -b v1.26.1 --recursive --depth 1 https://github.com/micropython/micropython.git
 
       - name: Clone and patch TWAI CAN module
         run: |
@@ -46,7 +46,6 @@ jobs:
           cd ~/esp/micropython/ports/esp32
           rm -f *.lock
           make submodules
-          echo "CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y" >> boards/ESP32_GENERIC_S3/sdkconfig.board
           make \
             BOARD=ESP32_GENERIC_S3 \
             USER_C_MODULES=../../../../cmodules/micropython-esp32-twai/src_can_v2/micropython.cmake
