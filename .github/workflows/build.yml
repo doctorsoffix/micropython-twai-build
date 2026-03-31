@@ -12,22 +12,24 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git wget flex bison gperf python3 python3-pip             python3-venv cmake ninja-build ccache libffi-dev libssl-dev             dfu-util libusb-1.0-0
+          sudo apt install -y git wget flex bison gperf python3 python3-pip \
+            python3-venv cmake ninja-build ccache libffi-dev libssl-dev \
+            dfu-util libusb-1.0-0
 
-      - name: Clone ESP-IDF 5.1
+      - name: Clone ESP-IDF release/v5.1 (functional TWAI)
         run: |
           mkdir -p ~/esp
           cd ~/esp
-          git clone -b v5.1.0 --recursive https://github.com/espressif/esp-idf.git
+          git clone -b release/v5.1 --recursive https://github.com/espressif/esp-idf.git
           cd esp-idf
           ./install.sh esp32s3
 
-      - name: Clone MicroPython 1.22.1
+      - name: Clone MicroPython v1.22.1 (stable TWAI support)
         run: |
           cd ~/esp
           git clone -b v1.22.1 --recursive https://github.com/micropython/micropython.git
 
-      - name: Copy board definition (ESP32-S3 ZERO)
+      - name: Copy ESP32-S3 ZERO board definition
         run: |
           mkdir -p ~/esp/micropython/ports/esp32/boards/ESP32_S3_ZERO
           cp -r ESP32_S3_ZERO/* ~/esp/micropython/ports/esp32/boards/ESP32_S3_ZERO/
@@ -37,14 +39,14 @@ jobs:
           cd ~/esp/micropython
           make -C mpy-cross
 
-      - name: Build firmware
+      - name: Build firmware for ESP32-S3 ZERO
         run: |
           . ~/esp/esp-idf/export.sh
           cd ~/esp/micropython/ports/esp32
           make submodules
           make BOARD=ESP32_S3_ZERO
 
-      - name: Upload artifact
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: micropython-esp32-s3-zero-can
