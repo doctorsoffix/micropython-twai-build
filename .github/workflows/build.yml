@@ -1,4 +1,3 @@
-
 name: Build MicroPython for ESP32-S3 ZERO (with TWAI CAN)
 
 on:
@@ -16,7 +15,7 @@ jobs:
             python3-venv cmake ninja-build ccache libffi-dev libssl-dev \
             dfu-util libusb-1.0-0
 
-      - name: Clone ESP-IDF release/v5.1 (functional TWAI)
+      - name: Clone ESP-IDF release/v5.1 (working TWAI)
         run: |
           mkdir -p ~/esp
           cd ~/esp
@@ -24,15 +23,40 @@ jobs:
           cd esp-idf
           ./install.sh esp32s3
 
-      - name: Clone MicroPython v1.22.1 (stable TWAI support)
+      - name: Clone MicroPython v1.22.1
         run: |
           cd ~/esp
           git clone -b v1.22.1 --recursive https://github.com/micropython/micropython.git
 
-      - name: Copy ESP32-S3 ZERO board definition
+      - name: Auto-create ESP32-S3 ZERO board definition
         run: |
           mkdir -p ~/esp/micropython/ports/esp32/boards/ESP32_S3_ZERO
-          cp -r ESP32_S3_ZERO/* ~/esp/micropython/ports/esp32/boards/ESP32_S3_ZERO/
+          
+          cat << 'EOF' > ~/esp/micropython/ports/esp32/boards/ESP32_S3_ZERO/mpconfigboard.mk
+# Board name
+BOARDNAME = ESP32_S3_ZERO
+
+# Flash config (Waveshare ESP32-S3 ZERO)
+FLASH_SIZE = 4MB
+FLASH_MODE = qio
+FLASH_FREQ = 80m
+
+# Apply TWAI CAN overrides
+SDKCONFIG_OVERRIDES = sdkconfig.board
+EOF
+
+          cat << 'EOF' > ~/esp/micropython/ports/esp32/boards/ESP32_S3_ZERO/sdkconfig.board
+# Enable TWAI CAN support
+CONFIG_ESP32S3_CAN_SUPPORTED=y
+CONFIG_SOC_TWAI_SUPPORTED=y
+CONFIG_TWAI_ISR_IN_IRAM=y
+CONFIG_TWAI_SUPPRESS_FEATURE_WARNINGS=y
+
+# Flash settings for Waveshare ESP32-S3 ZERO (4MB QIO)
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+EOF
 
       - name: Build mpy-cross
         run: |
@@ -46,7 +70,7 @@ jobs:
           make submodules
           make BOARD=ESP32_S3_ZERO
 
-      - name: Upload firmware artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: micropython-esp32-s3-zero-can
